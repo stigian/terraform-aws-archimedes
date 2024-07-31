@@ -5,7 +5,7 @@ data "aws_region" "default" {}
 resource "random_pet" "uuid" {}
 
 resource "aws_s3_bucket" "logs" {
-  bucket = "archimedes-logs-${random_pet.uuid.id}"
+  bucket = local.resource_name
 }
 
 resource "aws_s3_bucket_acl" "example" {
@@ -28,7 +28,7 @@ data "aws_iam_policy_document" "assume_role" {
       test     = "StringEquals"
       variable = "aws:SourceArn"
       values = [
-        "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:project/${aws_codebuild_project.archimedes.name}",
+        "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:project/${local.resource_name}",
       ]
     }
   }
@@ -117,7 +117,7 @@ resource "aws_iam_role_policy" "default" {
 }
 
 resource "aws_codebuild_project" "archimedes" {
-  name          = "archimedes-runner-${random_pet.uuid.id}"
+  name          = local.resource_name
   description   = "GitHub Actions Runner for Archimedes"
   build_timeout = 60
   service_role  = aws_iam_role.default.arn
