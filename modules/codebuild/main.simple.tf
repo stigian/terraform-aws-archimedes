@@ -311,11 +311,6 @@ resource "aws_codebuild_webhook" "this" {
   filter_group {
     filter {
       type    = "EVENT"
-      pattern = "push"
-    }
-
-    filter {
-      type    = "EVENT"
       pattern = "WORKFLOW_JOB_QUEUED"
     }
   }
