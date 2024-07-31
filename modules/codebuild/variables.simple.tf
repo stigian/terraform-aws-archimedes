@@ -41,6 +41,5 @@ variable "concurrent_build_limit" {
 
 variable "source_location" {
   type        = string
-  default     = ""
   description = "The location of the source code from git or s3"
 }
