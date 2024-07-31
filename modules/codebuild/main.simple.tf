@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "logs" {
   bucket = local.resource_name
 }
 
-resource "aws_s3_bucket_acl" "example" {
+resource "aws_s3_bucket_acl" "this" {
   bucket = aws_s3_bucket.logs.id
   acl    = "private"
 }
@@ -24,13 +24,13 @@ data "aws_iam_policy_document" "assume_role" {
 
     actions = ["sts:AssumeRole"]
 
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceArn"
-      values = [
-        "arn:aws:codebuild:${var.aws_region}:${var.aws_account_id}:project/${local.resource_name}",
-      ]
-    }
+    # condition {
+    #   test     = "StringEquals"
+    #   variable = "aws:SourceArn"
+    #   values = [
+    #     "arn:aws-us-gov:codebuild:${var.aws_region}:${var.aws_account_id}:project/${local.resource_name}",
+    #   ]
+    # }
   }
 }
 
@@ -163,7 +163,7 @@ resource "aws_codebuild_project" "archimedes" {
 
   source {
     type            = "GITHUB"
-    location        = "https://github.com/mitchellh/packer.git"
+    location        = "https://github.com/stigian/eShopOnWeb"
     git_clone_depth = 1
 
     git_submodules_config {
