@@ -107,7 +107,7 @@ data "aws_iam_policy_document" "default" {
     resources = ["*"]
   }
 
-  statement {
+  statement { # VPC permissions
     effect = "Allow"
 
     actions = [
@@ -157,12 +157,20 @@ data "aws_iam_policy_document" "default" {
   statement { # ECR permissions
     effect = "Allow"
     actions = [
-      "s3:*"
+      "ecr:GetAuthorizationToken",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:GetRepositoryPolicy",
+      "ecr:DescribeRepositories",
+      "ecr:ListImages",
+      "ecr:DescribeImages",
+      "ecr:BatchGetImage",
+      "ecr:GetLifecyclePolicy",
+      "ecr:GetLifecyclePolicyPreview",
+      "ecr:ListTagsForResource",
+      "ecr:DescribeImageScanFindings"
     ]
-    resources = [
-      aws_s3_bucket.logs.arn,
-      "${aws_s3_bucket.logs.arn}/*",
-    ]
+    resources = ["*"]
   }
 }
 
