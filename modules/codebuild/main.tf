@@ -85,8 +85,8 @@ resource "random_pet" "uuid" {
 }
 
 locals {
-  resource_name     = "actions-runner-${random_pet.uuid.result}"
-  cache_bucket_name = "${local.resource_name}${var.cache_bucket_suffix_enabled ? "-${join("", random_pet.uuid[*].result)}" : ""}"
+  resource_name     = "actions-runner-${random_pet.uuid.result.id}"
+  cache_bucket_name = "${local.resource_name}${var.cache_bucket_suffix_enabled ? "-${join("", random_pet.uuid[*].id)}" : ""}"
 
   ## Clean up the bucket name to use only hyphens, and trim its length to 63 characters.
   ## As per https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
@@ -341,7 +341,7 @@ resource "aws_codebuild_source_credential" "authorization" {
 }
 
 resource "aws_codebuild_project" "default" {
-  name                   = "codebuild-runner-${random_pet.uuid.result}"
+  name                   = "codebuild-runner-${random_pet.uuid.result.id}"
   description            = var.description
   concurrent_build_limit = var.concurrent_build_limit
   service_role           = join("", aws_iam_role.default[*].arn)
