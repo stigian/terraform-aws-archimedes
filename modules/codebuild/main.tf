@@ -3,14 +3,14 @@ data "aws_caller_identity" "default" {}
 data "aws_region" "default" {}
 
 resource "aws_s3_bucket_acl" "default" {
-  count      = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count      = local.create_s3_cache_bucket ? 1 : 0
   bucket     = join("", resource.aws_s3_bucket.cache_bucket[*].id)
   acl        = "private"
   depends_on = [aws_s3_bucket_ownership_controls.s3_bucket_acl_ownership]
 }
 
 resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
-  count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count  = local.create_s3_cache_bucket ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
   rule {
     object_ownership = "BucketOwnerPreferred"
@@ -18,7 +18,7 @@ resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
 }
 
 resource "aws_s3_bucket_versioning" "default" {
-  count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count  = local.create_s3_cache_bucket ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
   versioning_configuration {
     status = "Enabled"
@@ -26,7 +26,7 @@ resource "aws_s3_bucket_versioning" "default" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "default" {
-  count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count  = local.create_s3_cache_bucket ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
 
   rule {
@@ -44,7 +44,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "default" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count  = local.create_s3_cache_bucket ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
 
   rule {
@@ -55,15 +55,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 }
 
 resource "aws_s3_bucket_logging" "default" {
-  count  = module.this.enabled && local.create_s3_cache_bucket && var.access_log_bucket_name != "" ? 1 : 0
+  count  = local.create_s3_cache_bucket && var.access_log_bucket_name != "" ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
 
   target_bucket = var.access_log_bucket_name
-  target_prefix = "logs/${module.this.id}/"
+  target_prefix = "logs/${var.name}-codebuild-runner/"
 }
 
 resource "aws_s3_bucket_public_access_block" "default" {
-  count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count  = local.create_s3_cache_bucket ? 1 : 0
   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
 
   block_public_acls       = true
@@ -76,23 +76,17 @@ resource "aws_s3_bucket" "cache_bucket" {
   #bridgecrew:skip=BC_AWS_S3_13:Skipping `Enable S3 Bucket Logging` check until bridgecrew will support dynamic blocks (https://github.com/bridgecrewio/checkov/issues/776).
   #bridgecrew:skip=BC_AWS_S3_14:Skipping `Ensure all data stored in the S3 bucket is securely encrypted at rest` check until bridgecrew will support dynamic blocks (https://github.com/bridgecrewio/checkov/issues/776).
   #bridgecrew:skip=CKV_AWS_52:Skipping `Ensure S3 bucket has MFA delete enabled` due to issue in terraform (https://github.com/hashicorp/terraform-provider-aws/issues/629).
-  count         = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+  count         = local.create_s3_cache_bucket ? 1 : 0
   bucket        = local.cache_bucket_name_normalised
   force_destroy = true
-  tags          = module.this.tags
 }
 
-resource "random_string" "bucket_prefix" {
-  count   = module.this.enabled ? 1 : 0
-  length  = 12
-  numeric = false
-  upper   = false
-  special = false
-  lower   = true
+resource "random_pet" "uuid" {
 }
 
 locals {
-  cache_bucket_name = "${module.this.id}${var.cache_bucket_suffix_enabled ? "-${join("", random_string.bucket_prefix[*].result)}" : ""}"
+  resource_name     = "actions-runner-${random_pet.uuid.result}"
+  cache_bucket_name = "${local.resource_name}${var.cache_bucket_suffix_enabled ? "-${join("", random_pet.uuid[*].result)}" : ""}"
 
   ## Clean up the bucket name to use only hyphens, and trim its length to 63 characters.
   ## As per https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
@@ -115,7 +109,7 @@ locals {
   cache_options = {
     "S3" = {
       type     = "S3"
-      location = module.this.enabled && local.s3_cache_enabled ? local.s3_bucket_name : "none"
+      location = local.s3_cache_enabled ? local.s3_bucket_name : "none"
     },
     "LOCAL" = {
       type  = "LOCAL"
@@ -131,13 +125,11 @@ locals {
 }
 
 resource "aws_iam_role" "default" {
-  count                 = module.this.enabled ? 1 : 0
-  name                  = module.this.id
+  name                  = local.resource_name
   assume_role_policy    = data.aws_iam_policy_document.role.json
   force_detach_policies = true
   path                  = var.iam_role_path
   permissions_boundary  = var.iam_permissions_boundary
-  tags                  = module.this.tags
 }
 
 data "aws_iam_policy_document" "role" {
@@ -160,7 +152,7 @@ data "aws_iam_policy_document" "role" {
       # to avoid cyclic dependencies with codebuild, we can't reference
       # the resources arn directly instead we interpolate the arn using known values
       values = [
-        "arn:aws-us-gov:codebuild:${local.aws_region}:${local.aws_account_id}:project/${module.this.id}"
+        "arn:aws-us-gov:codebuild:${local.aws_region}:${local.aws_account_id}:project/${local.resource_name}"
       ]
     }
 
@@ -169,29 +161,25 @@ data "aws_iam_policy_document" "role" {
 }
 
 resource "aws_iam_policy" "default" {
-  count  = module.this.enabled ? 1 : 0
-  name   = module.this.id
+  name   = local.resource_name
   path   = var.iam_policy_path
   policy = data.aws_iam_policy_document.combined_permissions.json
-  tags   = module.this.tags
 }
 
 resource "aws_iam_policy" "default_cache_bucket" {
-  count = module.this.enabled && local.s3_cache_enabled ? 1 : 0
+  count = local.s3_cache_enabled ? 1 : 0
 
-  name   = "${module.this.id}-cache-bucket"
+  name   = "${local.resource_name}-cache-bucket"
   path   = var.iam_policy_path
   policy = join("", data.aws_iam_policy_document.permissions_cache_bucket[*].json)
-  tags   = module.this.tags
 }
 
 data "aws_s3_bucket" "secondary_artifact" {
-  count  = module.this.enabled ? (var.secondary_artifact_location != null ? 1 : 0) : 0
+  count  = var.secondary_artifact_location != null ? 1 : 0
   bucket = var.secondary_artifact_location
 }
 
 data "aws_iam_policy_document" "permissions" {
-  count = module.this.enabled ? 1 : 0
 
   dynamic "statement" {
     for_each = var.default_permissions_enabled ? [1] : []
@@ -256,7 +244,7 @@ data "aws_iam_policy_document" "permissions" {
 }
 
 data "aws_iam_policy_document" "vpc_permissions" {
-  count = module.this.enabled && var.vpc_config != {} ? 1 : 0
+  count = var.vpc_config != {} ? 1 : 0
 
   statement {
     sid = ""
@@ -316,7 +304,7 @@ data "aws_iam_policy_document" "combined_permissions" {
 }
 
 data "aws_iam_policy_document" "permissions_cache_bucket" {
-  count = module.this.enabled && local.s3_cache_enabled ? 1 : 0
+  count = local.s3_cache_enabled ? 1 : 0
   statement {
     sid = ""
 
@@ -334,19 +322,18 @@ data "aws_iam_policy_document" "permissions_cache_bucket" {
 }
 
 resource "aws_iam_role_policy_attachment" "default" {
-  count      = module.this.enabled ? 1 : 0
   policy_arn = join("", aws_iam_policy.default[*].arn)
   role       = join("", aws_iam_role.default[*].id)
 }
 
 resource "aws_iam_role_policy_attachment" "default_cache_bucket" {
-  count      = module.this.enabled && local.s3_cache_enabled ? 1 : 0
+  count      = local.s3_cache_enabled ? 1 : 0
   policy_arn = join("", aws_iam_policy.default_cache_bucket[*].arn)
   role       = join("", aws_iam_role.default[*].id)
 }
 
 resource "aws_codebuild_source_credential" "authorization" {
-  count       = module.this.enabled && var.private_repository ? 1 : 0
+  count       = var.private_repository ? 1 : 0
   auth_type   = var.source_credential_auth_type
   server_type = var.source_credential_server_type
   token       = var.source_credential_token
@@ -354,8 +341,7 @@ resource "aws_codebuild_source_credential" "authorization" {
 }
 
 resource "aws_codebuild_project" "default" {
-  count                  = module.this.enabled ? 1 : 0
-  name                   = module.this.id
+  name                   = "codebuild-runner-${random_pet.uuid.result}"
   description            = var.description
   concurrent_build_limit = var.concurrent_build_limit
   service_role           = join("", aws_iam_role.default[*].arn)
@@ -363,12 +349,6 @@ resource "aws_codebuild_project" "default" {
   build_timeout          = var.build_timeout
   source_version         = var.source_version != "" ? var.source_version : null
   encryption_key         = var.encryption_key
-
-  tags = {
-    for name, value in module.this.tags :
-    name => value
-    if length(value) > 0
-  }
 
   artifacts {
     type     = var.artifact_type
@@ -435,14 +415,6 @@ resource "aws_codebuild_project" "default" {
       content {
         name  = "IMAGE_TAG"
         value = var.image_tag
-      }
-    }
-
-    dynamic "environment_variable" {
-      for_each = signum(length(module.this.stage)) == 1 ? [""] : []
-      content {
-        name  = "STAGE"
-        value = module.this.stage
       }
     }
 

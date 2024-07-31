@@ -1,7 +1,7 @@
 variable "name" {
   type        = string
   description = "ID element. Usually the component or solution name, e.g. 'app' or 'jenkins'."
-  default     = "Archimedes"
+  default     = "archimedes"
 }
 
 variable "environment_variables" {
