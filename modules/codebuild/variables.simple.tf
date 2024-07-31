@@ -39,7 +39,31 @@ variable "concurrent_build_limit" {
   description = "The number of concurrent builds allowed"
 }
 
+variable "source_credential_auth_type" {
+  type        = string
+  default     = "PERSONAL_ACCESS_TOKEN"
+  description = "The type of authentication used to connect to a GitHub or GitHub Enterprise"
+}
+
+variable "source_credential_server_type" {
+  type        = string
+  default     = "GITHUB"
+  description = "The source provider used for this project. Options are GITHUB or GITHUB_ENTERPRISE"
+}
+
+variable "source_credential_token" {
+  type        = string
+  default     = ""
+  description = "For GitHub or GitHub Enterprise, this is the personal access token"
+}
+
 variable "source_location" {
   type        = string
-  description = "The location of the source code from git or s3"
+  description = "The URL of the GitHub repo without the .git extension"
+}
+
+variable "source_type" {
+  type        = string
+  default     = "GITHUB"
+  description = "The type of repository that contains the source code to be built. Valid values for this parameter are: CODECOMMIT, CODEPIPELINE, GITHUB, GITHUB_ENTERPRISE, or S3"
 }

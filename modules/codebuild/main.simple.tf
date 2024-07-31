@@ -227,9 +227,11 @@ resource "aws_codebuild_project" "archimedes" {
   }
 
   source {
-    type            = "GITHUB"
-    location        = var.source_location
-    git_clone_depth = 1
+    type                = var.source_type
+    location            = var.source_location
+    git_clone_depth     = 1
+    insecure_ssl        = false
+    report_build_status = true
 
     git_submodules_config {
       fetch_submodules = true
@@ -256,6 +258,13 @@ resource "aws_codebuild_project" "archimedes" {
     Environment = "Test"
   }
 }
+
+resource "aws_codebuild_source_credential" "this" {
+  auth_type   = "PERSONAL_ACCESS_TOKEN"
+  server_type = var.source_credential_server_type
+  token       = var.source_credential_token
+}
+
 
 # resource "aws_codebuild_project" "project-with-cache" {
 #   name           = "test-project-cache"
@@ -301,8 +310,8 @@ resource "aws_codebuild_webhook" "this" {
   project_name = aws_codebuild_project.archimedes.name
   filter_group {
     filter {
-      type    = "BASE_REF"
-      pattern = "main"
+      type    = "EVENT"
+      pattern = "push"
     }
 
     filter {
