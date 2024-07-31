@@ -181,10 +181,11 @@ resource "aws_iam_role_policy" "default" {
 }
 
 resource "aws_codebuild_project" "archimedes" {
-  name          = local.resource_name
-  description   = "GitHub Actions Runner for Archimedes"
-  build_timeout = 60
-  service_role  = aws_iam_role.default.arn
+  name                   = local.resource_name
+  description            = "GitHub Actions Runner for Archimedes"
+  build_timeout          = var.build_timeout
+  service_role           = aws_iam_role.default.arn
+  concurrent_build_limit = var.concurrent_build_limit
 
   artifacts {
     type = "NO_ARTIFACTS"
@@ -196,9 +197,9 @@ resource "aws_codebuild_project" "archimedes" {
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
-    type                        = "LINUX_CONTAINER"
+    compute_type                = var.build_compute_type
+    image                       = var.build_image
+    type                        = var.build_type
     image_pull_credentials_type = "CODEBUILD"
 
     environment_variable {
