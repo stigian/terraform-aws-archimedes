@@ -85,7 +85,7 @@ resource "random_pet" "uuid" {
 }
 
 locals {
-  resource_name     = "actions-runner-${random_pet.uuid.result.id}"
+  resource_name     = "actions-runner-${random_pet.uuid.id}"
   cache_bucket_name = "${local.resource_name}${var.cache_bucket_suffix_enabled ? "-${join("", random_pet.uuid[*].id)}" : ""}"
 
   ## Clean up the bucket name to use only hyphens, and trim its length to 63 characters.
@@ -341,7 +341,7 @@ resource "aws_codebuild_source_credential" "authorization" {
 }
 
 resource "aws_codebuild_project" "default" {
-  name                   = "codebuild-runner-${random_pet.uuid.result.id}"
+  name                   = "codebuild-runner-${random_pet.uuid.id}"
   description            = var.description
   concurrent_build_limit = var.concurrent_build_limit
   service_role           = join("", aws_iam_role.default[*].arn)
