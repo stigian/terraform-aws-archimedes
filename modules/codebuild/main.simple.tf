@@ -228,7 +228,7 @@ resource "aws_codebuild_project" "archimedes" {
 
   source {
     type            = "GITHUB"
-    location        = "https://github.com/stigian/eShopOnWeb"
+    location        = var.source_location
     git_clone_depth = 1
 
     git_submodules_config {
@@ -294,5 +294,33 @@ resource "aws_codebuild_project" "archimedes" {
 
 #   tags = {
 #     Environment = "Test"
+#   }
+# }
+
+resource "aws_codebuild_webhook" "this" {
+  project_name = aws_codebuild_project.archimedes.name
+  filter_group {
+    filter {
+      type    = "BASE_REF"
+      pattern = "main"
+    }
+
+    filter {
+      type    = "EVENT"
+      pattern = "WORKFLOW_JOB_QUEUED"
+    }
+  }
+}
+
+# resource "github_repository_webhook" "this" {
+#   repository = var.source_location
+#   active     = true
+#   events     = ["push"]
+
+#   configuration {
+#     url          = aws_codebuild_webhook.archimedes.payload_url
+#     secret       = aws_codebuild_webhook.archimedes.secret
+#     content_type = "json"
+#     insecure_ssl = false
 #   }
 # }

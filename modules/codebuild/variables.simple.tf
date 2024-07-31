@@ -38,3 +38,9 @@ variable "concurrent_build_limit" {
   default     = 1
   description = "The number of concurrent builds allowed"
 }
+
+variable "source_location" {
+  type        = string
+  default     = ""
+  description = "The location of the source code from git or s3"
+}
