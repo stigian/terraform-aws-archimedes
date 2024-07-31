@@ -5,12 +5,67 @@ data "aws_region" "default" {}
 resource "random_pet" "uuid" {}
 
 resource "aws_s3_bucket" "logs" {
-  bucket = local.resource_name
+  bucket        = local.resource_name
+  force_destroy = true
 }
 
-resource "aws_s3_bucket_acl" "this" {
+resource "aws_s3_bucket_ownership_controls" "this" {
   bucket = aws_s3_bucket.logs.id
-  acl    = "private"
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "this" {
+  bucket = aws_s3_bucket.logs.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# resource "aws_s3_bucket_lifecycle_configuration" "default" {
+#   count  = module.this.enabled && local.create_s3_cache_bucket ? 1 : 0
+#   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
+
+#   rule {
+#     id     = "codebuildcache"
+#     status = "Enabled"
+
+#     filter {
+#       prefix = "/"
+#     }
+
+#     expiration {
+#       days = var.cache_expiration_days
+#     }
+#   }
+# }
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# resource "aws_s3_bucket_logging" "default" {
+#   count  = module.this.enabled && local.create_s3_cache_bucket && var.access_log_bucket_name != "" ? 1 : 0
+#   bucket = join("", resource.aws_s3_bucket.cache_bucket[*].id)
+
+#   target_bucket = var.access_log_bucket_name
+#   target_prefix = "logs/${module.this.id}/"
+# }
+
+resource "aws_s3_bucket_public_access_block" "default" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 data "aws_iam_policy_document" "assume_role" {
@@ -112,6 +167,7 @@ data "aws_iam_policy_document" "default" {
 }
 
 resource "aws_iam_role_policy" "default" {
+  name   = "archimedes-runner-${random_pet.uuid.id}"
   role   = aws_iam_role.default.name
   policy = data.aws_iam_policy_document.default.json
 }
