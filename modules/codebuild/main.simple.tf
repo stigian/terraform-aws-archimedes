@@ -5,7 +5,7 @@ data "aws_region" "default" {}
 resource "random_pet" "uuid" {}
 
 resource "aws_s3_bucket" "logs" {
-  bucket        = local.resource_name
+  bucket        = local.repo_name_lowercase
   force_destroy = true
 }
 
@@ -90,7 +90,7 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "default" {
-  name               = "archimedes-runner-${random_pet.uuid.id}"
+  name               = "archimedes-runner-${local.repo_name_lowercase}"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
@@ -175,13 +175,13 @@ data "aws_iam_policy_document" "default" {
 }
 
 resource "aws_iam_role_policy" "default" {
-  name   = "archimedes-runner-${random_pet.uuid.id}"
+  name   = "archimedes-runner-${local.repo_name_lowercase}"
   role   = aws_iam_role.default.name
   policy = data.aws_iam_policy_document.default.json
 }
 
 resource "aws_codebuild_project" "archimedes" {
-  name                   = local.resource_name
+  name                   = local.repo_name_lowercase
   description            = "GitHub Actions Runner for Archimedes"
   build_timeout          = var.build_timeout
   service_role           = aws_iam_role.default.arn
