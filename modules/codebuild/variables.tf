@@ -147,7 +147,7 @@ variable "source_location" {
 
 variable "artifact_type" {
   type        = string
-  default     = "S3"
+  default     = "NO_ARTIFACTS"
   description = "The build output artifact's type. Valid values for this parameter are: CODEPIPELINE, NO_ARTIFACTS or S3"
 }
 
@@ -189,7 +189,7 @@ variable "git_clone_depth" {
 
 variable "private_repository" {
   type        = bool
-  default     = false
+  default     = true
   description = "Set to true to login into private repository with credentials supplied in source_credential variable."
 }
 
