@@ -172,6 +172,33 @@ data "aws_iam_policy_document" "default" {
     ]
     resources = ["*"]
   }
+
+  statement { # SSM Parameter Store
+    effect = "Allow"
+    actions = [
+      "ssm:DeleteParameter",
+      "ssm:DeleteParameters",
+      "ssm:DescribeParameters",
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParameterHistory",
+      "ssm:GetParametersByPath",
+      "ssm:PutParameter"
+    ]
+    resources = ["arn:aws-us-gov:ssm:${var.aws_region}:${var.aws_account_id}:parameter/*"]
+  }
+
+  statement { # Secrets Manager
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetResourcePolicy",
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret",
+      "secretsmanager:ListSecrets",
+      "secretsmanager:ListSecretVersionIds"
+    ]
+    resources = ["arn:aws-us-gov:secretsmanager:${var.aws_region}:${var.aws_account_id}:secret:*"]
+  }
 }
 
 resource "aws_iam_role_policy" "default" {
@@ -205,13 +232,20 @@ resource "aws_codebuild_project" "archimedes" {
     environment_variable {
       name  = "SOME_KEY1"
       value = "SOME_VALUE1"
+      type  = "PLAINTEXT"
     }
 
-    environment_variable {
-      name  = "SOME_KEY2"
-      value = "SOME_VALUE2"
-      type  = "PARAMETER_STORE"
-    }
+    # environment_variable {
+    #   name  = "SOME_KEY2"
+    #   value = "SOME_VALUE2"
+    #   type  = "PARAMETER_STORE"
+    # }
+
+    # environment_variable {
+    #   name  = "SOME_KEY3"
+    #   value = "SOME_VALUE3"
+    #   type  = "SECRETS_MANAGER"
+    # }
   }
 
   logs_config {
