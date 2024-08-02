@@ -8,9 +8,7 @@ updates:
 
   - package-ecosystem: "terraform"
     directories:
-      - "/modules/cluster"
-      - "/modules/container-definition"
-      - "/modules/service"
+      - "/modules/codebuild"
     schedule:
       interval: "weekly"
     # open-pull-requests-limit: 0 # Uncomment to disable automatic PRs
