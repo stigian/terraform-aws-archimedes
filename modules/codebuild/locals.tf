@@ -5,7 +5,7 @@ locals {
   # Get the last element of the list
   repo_name = local.split_url[length(local.split_url) - 1]
 
-  cache_bucket_name = "${local.repo_name}-${var.cache_bucket_suffix_enabled ? "-${join("", random_string.bucket_prefix[*].result)}" : ""}"
+  cache_bucket_name = "${local.repo_name}-${var.cache_bucket_suffix_enabled ? "-${join("", random_string.bucket_suffix[*].result)}" : ""}"
 
   ## Clean up the bucket name to use only hyphens, and trim its length to 63 characters.
   ## As per https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html

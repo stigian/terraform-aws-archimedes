@@ -81,7 +81,7 @@ resource "aws_s3_bucket" "cache_bucket" {
   force_destroy = true
 }
 
-resource "random_string" "bucket_prefix" {
+resource "random_string" "bucket_suffix" {
   length  = 12
   numeric = false
   upper   = false
