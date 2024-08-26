@@ -3,7 +3,7 @@ locals {
   split_url = split("/", var.source_location)
 
   # Get the last element of the list
-  repo_name = local.split_url[length(local.split_url) - 1]
+  repo_name = lower(local.split_url[length(local.split_url) - 1])
 
   cache_bucket_name = "${local.repo_name}-${var.cache_bucket_suffix_enabled ? "-${join("", random_string.bucket_suffix[*].result)}" : ""}"
 
