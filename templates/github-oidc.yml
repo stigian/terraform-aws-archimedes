@@ -1,11 +1,15 @@
 # https://github.com/aws-actions/configure-aws-credentials?tab=readme-ov-file#configuring-iam-to-trust-github
 # https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+# https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect#example-subject-claims
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create an IAM role for GitHub Actions using OIDC
+
 Parameters:
   GitHubOrg:
     Description: Name of GitHub organization/user (case sensitive)
     Type: String
   RepositoryName:
-    Description: Name of GitHub repository (case sensitive)
+    Description: Name of GitHub repository (case sensitive), or '*' for all repositories in the organization
     Type: String
   OIDCProviderArn:
     Description: Arn for the GitHub OIDC Provider.
@@ -13,11 +17,18 @@ Parameters:
     Type: String
   OIDCAudience:
     Description: Audience supplied to configure-aws-credentials.
-    Default: "sts.amazonaws.com"
+    Default: "sts.us-gov-west-1.amazonaws.com"
+    Type: String
+  PrincipalAccount:
+    Description: AWS Account ID where the OpenTofu/CloudFormation is run
+    Type: String
+  RoleName:
+    Description: Name of the IAM role to be assumed by GitHub Actions
+    Default: "ArchimedesRunnerRole"
     Type: String
 
 Conditions:
-  CreateOIDCProvider: !Equals 
+  CreateOIDCProvider: !Equals
     - !Ref OIDCProviderArn
     - ""
 
@@ -25,12 +36,14 @@ Resources:
   Role:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Ref RoleName
       AssumeRolePolicyDocument:
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Action: sts:AssumeRoleWithWebIdentity
             Principal:
-              Federated: !If 
+              Federated: !If
                 - CreateOIDCProvider
                 - !Ref GithubOidc
                 - !Ref OIDCProviderArn
@@ -38,18 +51,124 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: !Ref OIDCAudience
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:*
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubOrg}/${RepositoryName}:*"
+      Policies:
+        - PolicyName: ArchimedesRunnerPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: S3Permissions
+                Effect: Allow
+                Action:
+                  - s3:CreateBucket
+                  - s3:PutBucketAcl
+                  - s3:PutBucketOwnershipControls
+                  - s3:PutBucketVersioning
+                  - s3:PutBucketLifecycleConfiguration
+                  - s3:PutBucketEncryption
+                  - s3:PutBucketLogging
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:DeleteBucket
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: "*"
+              - Sid: IAMPermissions
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:PassRole
+                  - iam:GetRole
+                  - iam:CreatePolicy
+                  - iam:DeletePolicy
+                  - iam:CreatePolicyVersion
+                  - iam:DeletePolicyVersion
+                  - iam:GetPolicy
+                  - iam:GetPolicyVersion
+                Resource: "*"
+              - Sid: CodeBuildPermissions
+                Effect: Allow
+                Action:
+                  - codebuild:CreateProject
+                  - codebuild:DeleteProject
+                  - codebuild:UpdateProject
+                  - codebuild:BatchGetProjects
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                  - codebuild:CreateWebhook
+                  - codebuild:DeleteWebhook
+                Resource: "*"
+              - Sid: STSPermissions
+                Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource: "*"
+              - Sid: CloudWatchLogsPermissions
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Sid: EC2Permissions
+                Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeDhcpOptions
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                Resource: "*"
+              - Sid: ECRPermissions
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:GetRepositoryPolicy
+                  - ecr:DescribeRepositories
+                  - ecr:ListImages
+                  - ecr:DescribeImages
+                  - ecr:BatchGetImage
+                  - ecr:GetLifecyclePolicy
+                  - ecr:GetLifecyclePolicyPreview
+                  - ecr:ListTagsForResource
+                  - ecr:DescribeImageScanFindings
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                Resource: "*"
+              - Sid: CreateImageRepository
+                Effect: Allow
+                Action:
+                  - ecr:CreateRepository
+                  - ecr:DescribeRepositories
+                Resource: "arn:aws-us-gov:ecr:*:${PrincipalAccount}:repository/*"
+                Condition:
+                  StringEquals:
+                    aws:PrincipalAccount: !Ref PrincipalAccount
 
   GithubOidc:
     Type: AWS::IAM::OIDCProvider
     Condition: CreateOIDCProvider
     Properties:
       Url: https://token.actions.githubusercontent.com
-      ClientIdList: 
-        - sts.amazonaws.com
+      ClientIdList:
+        - sts.us-gov-west-1.amazonaws.com
       ThumbprintList:
         - ffffffffffffffffffffffffffffffffffffffff
 
 Outputs:
-  Role:
-    Value: !GetAtt Role.Arn 
+  RoleArn:
+    Description: ARN of the IAM role to be assumed by GitHub Actions
+    Value: !GetAtt Role.Arn
