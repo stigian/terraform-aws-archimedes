@@ -106,6 +106,7 @@ Resources:
               - iam:DeletePolicyVersion
               - iam:GetPolicy
               - iam:GetPolicyVersion
+              - iam:ListRolePolicies
             Resource: "*"
           - Sid: CodeBuildPermissions
             Effect: Allow
@@ -118,6 +119,7 @@ Resources:
               - codebuild:StopBuild
               - codebuild:CreateWebhook
               - codebuild:DeleteWebhook
+              - codebuild:ImportSourceCredentials
             Resource: "*"
           - Sid: STSPermissions
             Effect: Allow
