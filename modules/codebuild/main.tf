@@ -500,6 +500,7 @@ resource "aws_codebuild_project" "default" {
 }
 
 resource "aws_codebuild_webhook" "default" {
+  depends_on = [aws_codebuild_source_credential.authorization]
   project_name = aws_codebuild_project.default.name
   filter_group {
     filter {
