@@ -107,6 +107,10 @@ Resources:
               - iam:GetPolicy
               - iam:GetPolicyVersion
               - iam:ListRolePolicies
+              - iam:ListAttachedRolePolicies
+              - iam:ListInstanceProfilesForRole
+              - iam:ListPolicyVersions
+              - iam:TagRole
             Resource: "*"
           - Sid: CodeBuildPermissions
             Effect: Allow
@@ -120,6 +124,8 @@ Resources:
               - codebuild:CreateWebhook
               - codebuild:DeleteWebhook
               - codebuild:ImportSourceCredentials
+              - codebuild:ListSourceCredentials
+              - codebuild:DeleteSourceCredentials
             Resource: "*"
           - Sid: STSPermissions
             Effect: Allow
@@ -132,6 +138,7 @@ Resources:
               - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
+              - logs:TagResource
             Resource: "*"
           - Sid: EC2Permissions
             Effect: Allow
@@ -143,6 +150,8 @@ Resources:
               - ec2:DescribeSubnets
               - ec2:DescribeSecurityGroups
               - ec2:DescribeVpcs
+              - ec2:DescribeAvailabilityZones
+              - ec2:CreateVpc
             Resource: "*"
           - Sid: ECRPermissions
             Effect: Allow
