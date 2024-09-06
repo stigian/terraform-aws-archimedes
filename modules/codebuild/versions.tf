@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.3"
+  required_version = ">= 1.8" # OpenTofu version
 
   required_providers {
     aws = {
@@ -10,9 +10,5 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 2.1"
     }
-    # github = {
-    #   source  = "integrations/github"
-    #   version = ">= 5.60.0"
-    # }
   }
 }
