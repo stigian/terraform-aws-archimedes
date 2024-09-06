@@ -272,7 +272,7 @@ data "aws_iam_policy_document" "vpc_permissions" {
     ]
 
     resources = [
-      "arn:aws:ec2:${local.aws_region}:${local.aws_account_id}:network-interface/*"
+      "arn:aws:ec2:${data.aws_region.default.name}:${data.aws_caller_identity.default.account_id}:network-interface/*"
     ]
 
     condition {
